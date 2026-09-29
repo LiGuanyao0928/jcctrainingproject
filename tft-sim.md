@@ -51,3 +51,10 @@ tests/
 - [x] 第 1 步：模拟器核心 + 单元测试（`tft_sim/`，`tests/test_core.py`）
 - [x] 第 2 步：规则 bot（`bots/rule_bots.py`：运营流 / D 牌流 / 随机）；`python -m bots.arena --games 1000` 跑平衡与速度
   - 1000 局（4 进程，35 秒，约 29 局/秒）：运营流均名 3.43（前四 70%），D 牌流 4.57（49%），随机 6.00（22%）
+- [x] 第 3 步：Gymnasium 环境 + PPO（`rl/env.py` `rl/ppo.py` `rl/train.py` `rl/evaluate.py`）
+  - 65 个离散动作 + 动作掩码；学习者在座位 0，对手是 7 个规则 bot
+  - **与最初设计的差别**：回合结束自动排最佳阵容并装备（上场/下场/装备动作保留但被掩码）；纯 PPO 从零训练一直是第 8 名，
+    所以先用脚本"运营流老师"（`rl/teacher.py`）做行为克隆（`rl/bc.py`），再 PPO 微调
+  - 评估（`python -m rl.evaluate --baselines`，100 局，3 运营流 / 3 D 牌流 / 1 随机）：
+    PPO 均名 1.19（前四 98%，夺冠 90%）；BC 3.09；同座位的运营流 4.12、D 牌流 4.79、随机 5.87
+  - 复现：`python -m rl.bc --episodes 500` → `python -m rl.train --steps 2500000 --lr 5e-5 --ent 0.005 --opponents eval --resume checkpoints/bc.pt`
