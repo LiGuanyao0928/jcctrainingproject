@@ -1,0 +1,682 @@
+[
+ {
+  "name": "Aria",
+  "cost": 1,
+  "traits": [
+   "Ranger"
+  ],
+  "hp": 440,
+  "atk": 52,
+  "armor": 15,
+  "aspd": 0.9,
+  "range": 4,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "damage",
+   "value": 220
+  }
+ },
+ {
+  "name": "Brute",
+  "cost": 1,
+  "traits": [
+   "Warrior",
+   "Bruiser"
+  ],
+  "hp": 550,
+  "atk": 52,
+  "armor": 25,
+  "aspd": 0.7,
+  "range": 1,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "aoe",
+   "value": 220
+  }
+ },
+ {
+  "name": "Cinder",
+  "cost": 1,
+  "traits": [
+   "Mage"
+  ],
+  "hp": 440,
+  "atk": 52,
+  "armor": 15,
+  "aspd": 0.7,
+  "range": 4,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "damage",
+   "value": 220
+  }
+ },
+ {
+  "name": "Dax",
+  "cost": 1,
+  "traits": [
+   "Assassin"
+  ],
+  "hp": 467,
+  "atk": 62,
+  "armor": 25,
+  "aspd": 0.85,
+  "range": 1,
+  "mana": 70,
+  "mana_start": 20,
+  "skill": {
+   "type": "damage",
+   "value": 220
+  }
+ },
+ {
+  "name": "Elm",
+  "cost": 1,
+  "traits": [
+   "Guardian"
+  ],
+  "hp": 715,
+  "atk": 41,
+  "armor": 45,
+  "aspd": 0.7,
+  "range": 1,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "shield",
+   "value": 220
+  }
+ },
+ {
+  "name": "Fen",
+  "cost": 1,
+  "traits": [
+   "Ranger",
+   "Bruiser"
+  ],
+  "hp": 440,
+  "atk": 52,
+  "armor": 15,
+  "aspd": 0.9,
+  "range": 4,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "damage",
+   "value": 220
+  }
+ },
+ {
+  "name": "Gale",
+  "cost": 1,
+  "traits": [
+   "Mage",
+   "Warrior"
+  ],
+  "hp": 440,
+  "atk": 52,
+  "armor": 15,
+  "aspd": 0.7,
+  "range": 4,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "damage",
+   "value": 220
+  }
+ },
+ {
+  "name": "Holt",
+  "cost": 1,
+  "traits": [
+   "Guardian",
+   "Warrior"
+  ],
+  "hp": 715,
+  "atk": 41,
+  "armor": 45,
+  "aspd": 0.7,
+  "range": 1,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "shield",
+   "value": 220
+  }
+ },
+ {
+  "name": "Iris",
+  "cost": 2,
+  "traits": [
+   "Mage",
+   "Ranger"
+  ],
+  "hp": 560,
+  "atk": 64,
+  "armor": 15,
+  "aspd": 0.7,
+  "range": 4,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "damage",
+   "value": 290
+  }
+ },
+ {
+  "name": "Jarn",
+  "cost": 2,
+  "traits": [
+   "Warrior",
+   "Guardian"
+  ],
+  "hp": 700,
+  "atk": 64,
+  "armor": 25,
+  "aspd": 0.7,
+  "range": 1,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "aoe",
+   "value": 290
+  }
+ },
+ {
+  "name": "Kira",
+  "cost": 2,
+  "traits": [
+   "Assassin",
+   "Warrior"
+  ],
+  "hp": 595,
+  "atk": 76,
+  "armor": 25,
+  "aspd": 0.85,
+  "range": 1,
+  "mana": 70,
+  "mana_start": 20,
+  "skill": {
+   "type": "damage",
+   "value": 290
+  }
+ },
+ {
+  "name": "Lorn",
+  "cost": 2,
+  "traits": [
+   "Bruiser",
+   "Guardian"
+  ],
+  "hp": 910,
+  "atk": 51,
+  "armor": 45,
+  "aspd": 0.7,
+  "range": 1,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "heal",
+   "value": 290
+  }
+ },
+ {
+  "name": "Mox",
+  "cost": 2,
+  "traits": [
+   "Ranger",
+   "Assassin"
+  ],
+  "hp": 560,
+  "atk": 64,
+  "armor": 15,
+  "aspd": 0.9,
+  "range": 4,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "damage",
+   "value": 290
+  }
+ },
+ {
+  "name": "Nyx",
+  "cost": 2,
+  "traits": [
+   "Mage",
+   "Assassin"
+  ],
+  "hp": 560,
+  "atk": 64,
+  "armor": 15,
+  "aspd": 0.7,
+  "range": 4,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "damage",
+   "value": 290
+  }
+ },
+ {
+  "name": "Orin",
+  "cost": 2,
+  "traits": [
+   "Warrior",
+   "Bruiser"
+  ],
+  "hp": 700,
+  "atk": 64,
+  "armor": 25,
+  "aspd": 0.7,
+  "range": 1,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "aoe",
+   "value": 290
+  }
+ },
+ {
+  "name": "Pia",
+  "cost": 2,
+  "traits": [
+   "Guardian",
+   "Mage"
+  ],
+  "hp": 910,
+  "atk": 51,
+  "armor": 45,
+  "aspd": 0.7,
+  "range": 1,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "shield",
+   "value": 290
+  }
+ },
+ {
+  "name": "Quill",
+  "cost": 3,
+  "traits": [
+   "Ranger",
+   "Mage"
+  ],
+  "hp": 680,
+  "atk": 76,
+  "armor": 15,
+  "aspd": 0.9,
+  "range": 4,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "damage",
+   "value": 360
+  }
+ },
+ {
+  "name": "Rook",
+  "cost": 3,
+  "traits": [
+   "Guardian",
+   "Bruiser"
+  ],
+  "hp": 1105,
+  "atk": 60,
+  "armor": 45,
+  "aspd": 0.7,
+  "range": 1,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "shield",
+   "value": 360
+  }
+ },
+ {
+  "name": "Sable",
+  "cost": 3,
+  "traits": [
+   "Assassin",
+   "Bruiser"
+  ],
+  "hp": 722,
+  "atk": 91,
+  "armor": 25,
+  "aspd": 0.85,
+  "range": 1,
+  "mana": 70,
+  "mana_start": 20,
+  "skill": {
+   "type": "damage",
+   "value": 360
+  }
+ },
+ {
+  "name": "Talon",
+  "cost": 3,
+  "traits": [
+   "Warrior",
+   "Assassin"
+  ],
+  "hp": 850,
+  "atk": 76,
+  "armor": 25,
+  "aspd": 0.7,
+  "range": 1,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "aoe",
+   "value": 360
+  }
+ },
+ {
+  "name": "Ursa",
+  "cost": 3,
+  "traits": [
+   "Bruiser",
+   "Warrior"
+  ],
+  "hp": 1105,
+  "atk": 60,
+  "armor": 45,
+  "aspd": 0.7,
+  "range": 1,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "heal",
+   "value": 360
+  }
+ },
+ {
+  "name": "Vex",
+  "cost": 3,
+  "traits": [
+   "Mage",
+   "Assassin"
+  ],
+  "hp": 680,
+  "atk": 76,
+  "armor": 15,
+  "aspd": 0.7,
+  "range": 4,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "damage",
+   "value": 360
+  }
+ },
+ {
+  "name": "Wren",
+  "cost": 3,
+  "traits": [
+   "Ranger",
+   "Guardian"
+  ],
+  "hp": 680,
+  "atk": 76,
+  "armor": 15,
+  "aspd": 0.9,
+  "range": 4,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "damage",
+   "value": 360
+  }
+ },
+ {
+  "name": "Xan",
+  "cost": 3,
+  "traits": [
+   "Warrior",
+   "Mage"
+  ],
+  "hp": 850,
+  "atk": 76,
+  "armor": 25,
+  "aspd": 0.7,
+  "range": 1,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "aoe",
+   "value": 360
+  }
+ },
+ {
+  "name": "Yara",
+  "cost": 4,
+  "traits": [
+   "Mage",
+   "Guardian"
+  ],
+  "hp": 800,
+  "atk": 88,
+  "armor": 15,
+  "aspd": 0.7,
+  "range": 4,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "damage",
+   "value": 430
+  }
+ },
+ {
+  "name": "Zed",
+  "cost": 4,
+  "traits": [
+   "Assassin",
+   "Ranger"
+  ],
+  "hp": 850,
+  "atk": 105,
+  "armor": 25,
+  "aspd": 0.85,
+  "range": 1,
+  "mana": 70,
+  "mana_start": 20,
+  "skill": {
+   "type": "damage",
+   "value": 430
+  }
+ },
+ {
+  "name": "Ash",
+  "cost": 4,
+  "traits": [
+   "Warrior",
+   "Guardian"
+  ],
+  "hp": 1000,
+  "atk": 88,
+  "armor": 25,
+  "aspd": 0.7,
+  "range": 1,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "aoe",
+   "value": 430
+  }
+ },
+ {
+  "name": "Bram",
+  "cost": 4,
+  "traits": [
+   "Bruiser",
+   "Ranger"
+  ],
+  "hp": 1300,
+  "atk": 70,
+  "armor": 45,
+  "aspd": 0.7,
+  "range": 1,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "heal",
+   "value": 430
+  }
+ },
+ {
+  "name": "Cass",
+  "cost": 4,
+  "traits": [
+   "Mage",
+   "Bruiser"
+  ],
+  "hp": 800,
+  "atk": 88,
+  "armor": 15,
+  "aspd": 0.7,
+  "range": 4,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "damage",
+   "value": 430
+  }
+ },
+ {
+  "name": "Drev",
+  "cost": 4,
+  "traits": [
+   "Assassin",
+   "Warrior"
+  ],
+  "hp": 850,
+  "atk": 105,
+  "armor": 25,
+  "aspd": 0.85,
+  "range": 1,
+  "mana": 70,
+  "mana_start": 20,
+  "skill": {
+   "type": "damage",
+   "value": 430
+  }
+ },
+ {
+  "name": "Ember",
+  "cost": 4,
+  "traits": [
+   "Ranger",
+   "Mage"
+  ],
+  "hp": 800,
+  "atk": 88,
+  "armor": 15,
+  "aspd": 0.9,
+  "range": 4,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "damage",
+   "value": 430
+  }
+ },
+ {
+  "name": "Fable",
+  "cost": 5,
+  "traits": [
+   "Mage",
+   "Guardian"
+  ],
+  "hp": 920,
+  "atk": 100,
+  "armor": 15,
+  "aspd": 0.7,
+  "range": 4,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "damage",
+   "value": 500
+  }
+ },
+ {
+  "name": "Grim",
+  "cost": 5,
+  "traits": [
+   "Warrior",
+   "Bruiser"
+  ],
+  "hp": 1150,
+  "atk": 100,
+  "armor": 25,
+  "aspd": 0.7,
+  "range": 1,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "aoe",
+   "value": 500
+  }
+ },
+ {
+  "name": "Hex",
+  "cost": 5,
+  "traits": [
+   "Assassin",
+   "Mage"
+  ],
+  "hp": 977,
+  "atk": 120,
+  "armor": 25,
+  "aspd": 0.85,
+  "range": 1,
+  "mana": 70,
+  "mana_start": 20,
+  "skill": {
+   "type": "damage",
+   "value": 500
+  }
+ },
+ {
+  "name": "Ivor",
+  "cost": 5,
+  "traits": [
+   "Guardian",
+   "Ranger"
+  ],
+  "hp": 1495,
+  "atk": 80,
+  "armor": 45,
+  "aspd": 0.7,
+  "range": 1,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "shield",
+   "value": 500
+  }
+ },
+ {
+  "name": "Juno",
+  "cost": 5,
+  "traits": [
+   "Ranger",
+   "Warrior"
+  ],
+  "hp": 920,
+  "atk": 100,
+  "armor": 15,
+  "aspd": 0.9,
+  "range": 4,
+  "mana": 80,
+  "mana_start": 20,
+  "skill": {
+   "type": "damage",
+   "value": 500
+  }
+ }
+]
