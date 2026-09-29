@@ -6,7 +6,8 @@ import time
 import numpy as np
 import torch
 
-from rl.env import N_ACTIONS, TFTEnv
+from bots.rule_bots import RandomBot
+from rl.env import EVAL_LINEUP, N_ACTIONS, TFTEnv
 from rl.ppo import ActorCritic, gae, ppo_update
 from rl.vec import VecEnv
 
@@ -24,13 +25,16 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default="checkpoints/ppo.pt")
     ap.add_argument("--resume", default=None)
+    ap.add_argument("--opponents", choices=["random", "eval", "mix"], default="mix",
+                    help="random: 7 random bots (curriculum start); eval: 3 econ/3 reroll/1 random; mix: sampled")
     args = ap.parse_args()
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     torch.set_num_threads(2)
     device_note = "cpu"  # env/bot simulation dominates; the net is small
 
-    venv = VecEnv(args.workers, args.envs_per_worker, seed=args.seed * 100_000)
+    lineup = {"random": [RandomBot] * 7, "eval": EVAL_LINEUP, "mix": None}[args.opponents]
+    venv = VecEnv(args.workers, args.envs_per_worker, seed=args.seed * 100_000, lineup=lineup)
     obs_dim = venv.obs.shape[1]
     model = ActorCritic(obs_dim, N_ACTIONS)
     if args.resume:

@@ -27,7 +27,7 @@ N_ACTIONS = CAR0 + 9
 TRAITS = ["Assassin", "Bruiser", "Guardian", "Mage", "Ranger", "Warrior"]
 UNIT_F = 10
 BOT_MIX = ((EconBot, 0.4), (RerollBot, 0.4), (RandomBot, 0.2))
-POT_SCALE, POT_GAMMA = 0.02, 0.997
+POT_SCALE, POT_GAMMA, STEP_COST = 0.02, 0.997, 0.002
 EVAL_LINEUP = [EconBot] * 3 + [RerollBot] * 3 + [RandomBot]
 
 
@@ -138,6 +138,8 @@ class TFTEnv(gym.Env):
             finished = True
         phi1 = 0.0 if finished else self._potential()
         self.reward_acc += self.shaping * (POT_GAMMA * phi1 - phi0)
+        if self.phase == "plan" and action != END:
+            self.reward_acc -= STEP_COST  # discourages shuffling units up and down
         reward, self.reward_acc = self.reward_acc, 0.0
         info = {}
         if finished:
