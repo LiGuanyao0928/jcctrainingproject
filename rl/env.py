@@ -27,6 +27,7 @@ N_ACTIONS = CAR0 + 9
 TRAITS = ["Assassin", "Bruiser", "Guardian", "Mage", "Ranger", "Warrior"]
 UNIT_F = 10
 BOT_MIX = ((EconBot, 0.4), (RerollBot, 0.4), (RandomBot, 0.2))
+POT_SCALE, POT_GAMMA = 0.02, 0.997
 EVAL_LINEUP = [EconBot] * 3 + [RerollBot] * 3 + [RandomBot]
 
 
@@ -112,9 +113,18 @@ class TFTEnv(gym.Env):
             # dense signal: hp lost this round, plus a small bonus for using every board slot
             self.reward_acc += self.shaping * (me.hp - hp0) / 100.0 + 0.01 * fill * self.shaping
 
+    def _potential(self):
+        """Board/bench strength + banked gold; used for potential-based reward shaping."""
+        me, ch = self.me, self.data.champions
+        pw = lambda u: ch[u.name].cost * 1.8 ** (u.star - 1) * (1 + 0.2 * len(u.items))
+        board = sum(pw(u) for u in me.board.values())
+        bench = sum(pw(u) for u in me.bench if u)
+        return POT_SCALE * (board + 0.25 * bench + 0.1 * min(me.gold, 50))
+
     def step(self, action):
         action = int(action)
         assert self.action_masks()[action], f"illegal action {action} in phase {self.phase}"
+        phi0 = self._potential()
         finished = False
         try:
             if self.phase == "plan" and action != END:
@@ -126,6 +136,8 @@ class TFTEnv(gym.Env):
                 self._gen.send(action)
         except StopIteration:
             finished = True
+        phi1 = 0.0 if finished else self._potential()
+        self.reward_acc += self.shaping * (POT_GAMMA * phi1 - phi0)
         reward, self.reward_acc = self.reward_acc, 0.0
         info = {}
         if finished:
