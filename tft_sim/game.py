@@ -161,6 +161,11 @@ class Game:
         p.shop[i] = None
         return True
 
+    def can_acquire(self, p, name):
+        if None in p.bench:
+            return True
+        return sum(1 for u in p.units() if u.name == name and u.star == 1) >= 2
+
     def _acquire(self, p, name):
         """Add a 1-star unit (merging if that completes a triple). False if there is no room."""
         pending = Unit(name)
@@ -272,7 +277,8 @@ class Game:
         for k, v in a.get("buff", {}).items():
             p.buffs[k] = p.buffs.get(k, 0) + v
 
-    def run_carousel(self, agents):
+    def carousel_begin(self):
+        """Fill the carousel; returns the alive players in pick order (lowest hp first)."""
         costs = car.carousel_costs(self.stage)
         self.carousel = []
         for _ in range(car.CAROUSEL_SIZE):
@@ -282,17 +288,25 @@ class Game:
             name = self.rng.choices(names, weights=[self.pool[n] for n in names])[0]
             self.pool[name] -= 1
             self.carousel.append((name, self.rng.choice(list(COMPONENTS))))
-        for p in car.pick_order(self.players):
-            if not self.carousel:
-                break
-            i = agents[p.id].pick_carousel(self, p, list(self.carousel))
-            i = i if 0 <= i < len(self.carousel) else 0
-            name, item = self.carousel.pop(i)
-            p.inventory.append(item)
-            self._give_unit(p, name)
+        return car.pick_order(self.players)
+
+    def carousel_take(self, p, i):
+        i = i if 0 <= i < len(self.carousel) else 0
+        name, item = self.carousel.pop(i)
+        p.inventory.append(item)
+        self._give_unit(p, name)
+
+    def carousel_end(self):
         for name, _ in self.carousel:
             self.pool[name] += 1
         self.carousel = []
+
+    def run_carousel(self, agents):
+        for p in self.carousel_begin():
+            if not self.carousel:
+                break
+            self.carousel_take(p, agents[p.id].pick_carousel(self, p, list(self.carousel)))
+        self.carousel_end()
 
     def _give_unit(self, p, name):
         if not self._acquire(p, name):
@@ -315,29 +329,36 @@ class Game:
     def _board_units(self, p, side):
         return combat.build_units(side, p.board, self.data, p.buffs)
 
-    def play_round(self, agents):
-        if self.finished:
-            return
-        stage, rnd, kind = self.stage, self.rnd, self.kind
+    def start_round(self):
+        """Income + free shop refresh for every alive player. Returns them."""
         alive = self.alive_players()
         for p in alive:
             self._income(p)
             self.refresh_shop(p)
-        tier = aug.AUGMENT_ROUNDS.get((stage, rnd))
+        return alive
+
+    def finish_round(self, alive):
+        if self.kind == "pvp":
+            self._pvp(alive)
+        elif self.kind == "pve":
+            self._pve(alive)
+        self._advance()
+
+    def play_round(self, agents):
+        if self.finished:
+            return
+        alive = self.start_round()
+        tier = aug.AUGMENT_ROUNDS.get((self.stage, self.rnd))
         if tier:
             for p in alive:
                 options = aug.offer(self.rng, tier)
                 i = agents[p.id].pick_augment(self, p, options)
                 self.apply_augment(p, options[i if 0 <= i < len(options) else 0])
-        if kind == "carousel":
+        if self.kind == "carousel":
             self.run_carousel(agents)
         for p in alive:
             agents[p.id].act(self, p)
-        if kind == "pvp":
-            self._pvp(alive)
-        elif kind == "pve":
-            self._pve(alive)
-        self._advance()
+        self.finish_round(alive)
 
     def _pve(self, alive):
         for p in alive:
