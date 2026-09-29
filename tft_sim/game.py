@@ -222,6 +222,23 @@ class Game:
         p.set(dst, a)
         return True
 
+    def arrange(self, p, layout):
+        """Set the board to layout {slot: Unit} in one go; every other unit goes to the bench."""
+        chosen = list(layout.values())
+        mine = {id(u) for u in p.units()}
+        if (len(layout) > p.level or len({id(u) for u in chosen}) != len(chosen)
+                or any(id(u) not in mine for u in chosen)
+                or any(not 0 <= s < BOARD_SLOTS for s in layout)):
+            return False
+        chosen_ids = {id(u) for u in chosen}
+        rest = [u for u in p.bench if u and id(u) not in chosen_ids]
+        rest += [u for u in p.board.values() if id(u) not in chosen_ids]
+        if len(rest) > BENCH_SIZE:
+            return False
+        p.board = dict(layout)
+        p.bench = rest + [None] * (BENCH_SIZE - len(rest))
+        return True
+
     def equip(self, p, inv_idx, loc):
         u = p.get(loc)
         if u is None or inv_idx >= len(p.inventory):
