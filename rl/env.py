@@ -6,7 +6,7 @@ import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
 
-from bots.rule_bots import COL_ORDER, EconBot, RandomBot, RerollBot, copies_owned
+from bots.rule_bots import COL_ORDER, EconBot, RandomBot, RerollBot, copies_owned, tidy
 from tft_sim import augments as aug
 from tft_sim.data import BENCH_SIZE, BOARD_COLS, MAX_LEVEL, REROLL_COST, XP_COST, XP_TO_LEVEL, GameData
 from tft_sim.game import Game, board_loc
@@ -41,12 +41,13 @@ def _champ_feat(data):
 class TFTEnv(gym.Env):
     metadata = {}
 
-    def __init__(self, seed=None, lineup=None, shaping=1.0, max_actions=40):
+    def __init__(self, seed=None, lineup=None, shaping=1.0, max_actions=40, auto_arrange=True):
         self.data = GameData()
         self.cf = _champ_feat(self.data)
         self.lineup = lineup            # fixed list of 7 bot classes, else sampled from BOT_MIX
         self.shaping = shaping
         self.max_actions = max_actions
+        self.auto_arrange = auto_arrange  # field the best lineup + equip items when the turn ends
         self._seed = seed
         self._n_eps = 0
         self.action_space = spaces.Discrete(N_ACTIONS)
@@ -108,6 +109,8 @@ class TFTEnv(gym.Env):
             self.phase, self.n_actions = "plan", 0
             while (yield) != END:
                 pass
+            if self.auto_arrange:
+                tidy(g, me)
             fill = len(me.board) / max(1, me.level)
             g.finish_round(alive)
             # dense signal: hp lost this round, plus a small bonus for using every board slot
@@ -117,8 +120,8 @@ class TFTEnv(gym.Env):
         """Board/bench strength + banked gold; used for potential-based reward shaping."""
         me, ch = self.me, self.data.champions
         pw = lambda u: ch[u.name].cost * 1.8 ** (u.star - 1) * (1 + 0.2 * len(u.items))
-        board = sum(pw(u) for u in me.board.values())
-        bench = sum(pw(u) for u in me.bench if u)
+        powers = sorted((pw(u) for u in me.units()), reverse=True)
+        board, bench = sum(powers[:me.level]), sum(powers[me.level:])  # best `level` units fight
         return POT_SCALE * (board + 0.25 * bench + 0.1 * min(me.gold, 50))
 
     def step(self, action):
@@ -200,6 +203,13 @@ class TFTEnv(gym.Env):
         for i, name in enumerate(me.shop):
             if name and me.gold >= self.data.champions[name].cost and g.can_acquire(me, name):
                 m[BUY0 + i] = True
+        if self.auto_arrange:  # arrangement/equipment is automatic: keep only the economic actions
+            for i, u in enumerate(me.bench):
+                if u:
+                    m[SELL_BENCH0 + i] = True
+            for k in range(len(self.board_slots())):
+                m[SELL_BOARD0 + k] = True
+            return m
         slots = self.board_slots()
         has_free_bench = None in me.bench
         for i, u in enumerate(me.bench):
