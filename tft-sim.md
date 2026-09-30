@@ -58,3 +58,11 @@ tests/
   - 评估（`python -m rl.evaluate --baselines`，100 局，3 运营流 / 3 D 牌流 / 1 随机）：
     PPO 均名 1.19（前四 98%，夺冠 90%）；BC 3.09；同座位的运营流 4.12、D 牌流 4.79、随机 5.87
   - 复现：`python -m rl.bc --episodes 500` → `python -m rl.train --steps 2500000 --lr 5e-5 --ent 0.005 --opponents eval --resume checkpoints/bc.pt`
+- [x] 第 4 步：Riot 抓取 + 数据集 + 本地导入页面
+  - `imitation/riot_fetch.py`：tft-league-v1 → tft-match-v1，密钥从 `RIOT_API_KEY` 或 git 忽略的 `.env` 读取（见 `.env.example`），
+    滑动窗口限速（20/秒、100/2分钟）、429 按 Retry-After 重试、断点续抓；原始 JSON 存 `imitation_data/raw/`
+  - `imitation/dataset.py`：统一 Riot 对局/手写对局格式，去重存储，筛选，统计，生成 `.npz` + 词表 + 元数据；
+    可选 `imitation_data/id_map.json`（Riot 英雄 id → 模拟器英雄名）额外产出 `sim_units` 矩阵
+  - `webui/app.py`：`python -m webui.app` → http://127.0.0.1:5000（只监听本机）；导入、筛选、统计、一键生成/下载数据集
+  - `imitation/sample.py`：无密钥时用合成对局（ids 以 `SYN_` 开头）试用整个流程
+  - 流程：`python -m imitation.riot_fetch ...` → `python -m imitation.dataset ingest` （或网页导入）→ 网页/`dataset build` 生成数据集

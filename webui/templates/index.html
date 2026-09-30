@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tft-sim 对局数据</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1c2230;--mute:#667085;--line:#e3e6ec;--acc:#3b5bdb;--acc-ink:#fff;--good:#2b8a3e;--bad:#c92a2a}
+@media (prefers-color-scheme:dark){:root{--bg:#12151c;--card:#1a1f2b;--ink:#e6e9f0;--mute:#98a2b3;--line:#2a3142;--acc:#7c95ff;--acc-ink:#0d1020;--good:#69db7c;--bad:#ff8787}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:0 0 10px}
+.sub{color:var(--mute);margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+label{display:flex;flex-direction:column;font-size:12px;color:var(--mute);gap:3px}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-width:0}
+input[type=number]{width:84px}textarea{width:100%;min-height:70px;font-family:ui-monospace,monospace;font-size:12px}
+button{font:inherit;border:0;border-radius:6px;padding:7px 14px;background:var(--acc);color:var(--acc-ink);cursor:pointer}
+button.ghost{background:transparent;color:var(--acc);border:1px solid var(--line)}
+.drop{border:2px dashed var(--line);border-radius:8px;padding:14px;text-align:center;color:var(--mute);margin-bottom:10px}
+.drop.over{border-color:var(--acc);color:var(--ink)}
+.kpis{display:flex;gap:22px;flex-wrap:wrap}.kpi b{display:block;font-size:22px}.kpi span{color:var(--mute);font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mute);font-weight:500;font-size:12px}td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.pl{display:inline-block;min-width:22px;text-align:center;border-radius:4px;padding:0 5px;font-weight:600}
+.pl.t{background:color-mix(in srgb,var(--good) 22%,transparent)}.pl.b{background:color-mix(in srgb,var(--bad) 18%,transparent)}
+.chip{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:0 7px;margin:1px 2px 1px 0;font-size:12px}
+.msg{margin-top:8px;font-size:13px}.msg.err{color:var(--bad)}.msg.ok{color:var(--good)}
+.empty{color:var(--mute);padding:8px 0}
+.pager{display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--mute)}
+a{color:var(--acc)}
+</style>
+</head>
+<body>
+<main>
+{% raw %}
+<h1>tft-sim 对局数据</h1>
+<p class="sub">导入 Riot API 抓取的对局 JSON 或手动整理的对局，浏览筛选，并一键生成训练数据集。仅监听本机 127.0.0.1。</p>
+
+<div class="card"><div class="kpis" id="kpis"></div></div>
+
+<div class="card">
+  <h2>导入</h2>
+  <div class="drop" id="drop">把 JSON 文件拖到这里，或 <input type="file" id="file" multiple accept=".json,application/json"></div>
+  <textarea id="paste" placeholder='也可以直接粘贴 JSON：Riot match 详情，或 [{"placement":1,"level":9,"augments":["..."],"units":[{"id":"X","tier":2,"items":["..."]}]}]'></textarea>
+  <div class="row" style="margin-top:8px"><button id="importBtn">导入</button></div>
+  <div id="importMsg" class="msg"></div>
+</div>
+
+<div class="card">
+  <h2>筛选</h2>
+  <div class="row">
+    <label>名次 ≤ <select id="pmax"></select></label>
+    <label>英雄包含<input id="unit" placeholder="如 Jinx,Ahri"></label>
+    <label>羁绊包含<input id="trait" placeholder="如 Sniper"></label>
+    <label>海克斯包含<input id="augment" placeholder="如 Aug1"></label>
+    <label>最低等级<input id="minlv" type="number" min="0" max="12" value="0"></label>
+    <button id="apply">应用</button>
+  </div>
+</div>
+
+<div class="grid" id="stats"></div>
+
+<div class="card">
+  <h2>对局 <span id="total" class="sub"></span></h2>
+  <div id="matches"></div>
+  <div class="pager"><button class="ghost" id="prev">上一页</button><span id="page"></span><button class="ghost" id="next">下一页</button></div>
+</div>
+
+<div class="card">
+  <h2>生成训练数据集</h2>
+  <p class="sub">使用上面的筛选条件。输出 <code>.npz</code>（阵容/海克斯/羁绊/装备矩阵 + 名次权重）、词表和元数据。</p>
+  <div class="row">
+    <label>名称<input id="dsname" value="dataset" maxlength="40"></label>
+    <button id="build">生成</button>
+  </div>
+  <div id="buildMsg" class="msg"></div>
+  <div id="files" style="margin-top:8px"></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let offset = 0, total = 0; const LIMIT = 25;
+for (let i = 1; i <= 8; i++) $('pmax').add(new Option(i, i, false, i === 8));
+
+function query(extra = {}) {
+  const p = new URLSearchParams({placement_max: $('pmax').value, unit: $('unit').value, trait: $('trait').value,
+    augment: $('augment').value, min_level: $('minlv').value || 0, ...extra});
+  return p.toString();
+}
+async function api(url, opts) {
+  const r = await fetch(url, opts);
+  if (!r.ok) throw new Error((await r.text()).replace(/<[^>]+>/g, ' ').trim().slice(0, 200) || r.status);
+  return r.json();
+}
+const plBadge = p => `<span class="pl ${p <= 4 ? 't' : 'b'}">${p}</span>`;
+
+async function loadSummary() {
+  const s = await api('/api/summary');
+  $('kpis').innerHTML = [['对局数', s.n_matches], ['玩家记录', s.n_records], ['来源', s.sources.join(' / ') || '—']]
+    .map(([k, v]) => `<div class="kpi"><b>${esc(v)}</b><span>${k}</span></div>`).join('');
+}
+function table(title, rows) {
+  const body = rows.length ? rows.map(r => `<tr><td>${esc(r.name)}</td><td class="num">${r.n}</td><td class="num">${r.avg_placement.toFixed(2)}</td><td class="num">${Math.round(r.top4 * 100)}%</td></tr>`).join('')
+    : `<tr><td colspan="4" class="empty">样本不足</td></tr>`;
+  return `<div class="card"><h2>${title}</h2><table><tr><th>名称</th><th class="num">次数</th><th class="num">均名次</th><th class="num">前四</th></tr>${body}</table></div>`;
+}
+async function loadStats() {
+  const s = await api('/api/stats?' + query());
+  $('stats').innerHTML = table('英雄（均名次最好）', s.units) + table('海克斯', s.augments) + table('羁绊', s.traits) + table('常见阵容（按羁绊）', s.strong_comps);
+}
+async function loadMatches() {
+  const m = await api('/api/matches?' + query({limit: LIMIT, offset}));
+  total = m.total; $('total').textContent = `共 ${m.total} 条`;
+  $('page').textContent = m.total ? `${offset + 1}–${Math.min(offset + LIMIT, m.total)}` : '';
+  $('prev').disabled = offset === 0; $('next').disabled = offset + LIMIT >= m.total;
+  if (!m.rows.length) { $('matches').innerHTML = '<div class="empty">没有数据，先导入对局。</div>'; return; }
+  $('matches').innerHTML = '<table><tr><th>名次</th><th>等级</th><th>阵容</th><th>海克斯</th><th>英雄</th></tr>' + m.rows.map(r =>
+    `<tr><td>${plBadge(r.placement)}</td><td class="num">${r.level}</td><td>${esc(r.comp)}</td>` +
+    `<td>${r.augments.map(a => `<span class="chip">${esc(a)}</span>`).join('')}</td>` +
+    `<td>${r.units.map(u => `<span class="chip">${esc(u.id)} ${'★'.repeat(u.tier)}${u.items.length ? ' ·' + u.items.length : ''}</span>`).join('')}</td></tr>`).join('') + '</table>';
+}
+async function refresh() { offset = 0; await Promise.all([loadSummary(), loadStats(), loadMatches()]); }
+async function loadFiles() {
+  const f = await api('/api/datasets');
+  $('files').innerHTML = f.length ? f.map(n => `<a href="/api/download/${encodeURIComponent(n)}">${esc(n)}</a>`).join(' · ') : '<span class="empty">还没有生成过数据集</span>';
+}
+function say(el, text, ok) { el.textContent = text; el.className = 'msg ' + (ok ? 'ok' : 'err'); }
+
+async function doImport(files) {
+  const fd = new FormData();
+  [...files].forEach(f => fd.append('files', f));
+  if (!files.length) { const t = $('paste').value.trim(); if (!t) return say($('importMsg'), '请选择文件或粘贴 JSON', false); fd.append('text', t); }
+  try {
+    const r = await api('/api/import', {method: 'POST', body: fd});
+    say($('importMsg'), `新增 ${r.added} 条，重复 ${r.duplicates} 条` + (r.n_errors ? `，${r.n_errors} 个错误：` + r.errors.slice(0, 3).join('；') : ''), !r.n_errors);
+    $('paste').value = ''; $('file').value = ''; refresh();
+  } catch (e) { say($('importMsg'), '导入失败：' + e.message, false); }
+}
+$('importBtn').onclick = () => doImport($('file').files);
+$('file').onchange = () => doImport($('file').files);
+const drop = $('drop');
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+drop.ondragleave = () => drop.classList.remove('over');
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); doImport(e.dataTransfer.files); };
+$('apply').onclick = refresh;
+$('prev').onclick = () => { offset = Math.max(0, offset - LIMIT); loadMatches(); };
+$('next').onclick = () => { offset += LIMIT; loadMatches(); };
+$('build').onclick = async () => {
+  try {
+    const m = await api('/api/build', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
+      name: $('dsname').value, placement_max: $('pmax').value, unit: $('unit').value, trait: $('trait').value,
+      augment: $('augment').value, min_level: $('minlv').value || 0})});
+    say($('buildMsg'), `已生成：${m.n_records} 条记录，平均名次 ${m.placement_mean.toFixed(2)}`, true); loadFiles();
+  } catch (e) { say($('buildMsg'), '生成失败：' + e.message, false); }
+};
+refresh(); loadFiles();
+</script>
+{% endraw %}
+</main>
+</body>
+</html>
