@@ -6,8 +6,8 @@ import numpy as np
 from rl.env import TFTEnv
 
 
-def _worker(conn, seeds, lineup):
-    envs = [TFTEnv(seed=s, lineup=lineup) for s in seeds]
+def _worker(conn, seeds, lineup, set_dir):
+    envs = [TFTEnv(seed=s, lineup=lineup, set_dir=set_dir) for s in seeds]
     obs, masks = zip(*[(lambda o, i: (o, i["action_mask"]))(*e.reset()) for e in envs])
     obs, masks = list(obs), list(masks)
     conn.send((np.stack(obs), np.stack(masks)))
@@ -29,13 +29,13 @@ def _worker(conn, seeds, lineup):
 
 
 class VecEnv:
-    def __init__(self, n_workers, envs_per_worker, seed=0, lineup=None):
+    def __init__(self, n_workers, envs_per_worker, seed=0, lineup=None, set_dir=None):
         ctx = mp.get_context("fork")
         self.conns, self.procs = [], []
         for w in range(n_workers):
             parent, child = ctx.Pipe()
             seeds = [seed + w * 1000 + k * 17 for k in range(envs_per_worker)]
-            p = ctx.Process(target=_worker, args=(child, seeds, lineup), daemon=True)
+            p = ctx.Process(target=_worker, args=(child, seeds, lineup, set_dir), daemon=True)
             p.start()
             self.conns.append(parent)
             self.procs.append(p)

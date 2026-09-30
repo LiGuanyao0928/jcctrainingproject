@@ -25,6 +25,7 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default="checkpoints/ppo.pt")
     ap.add_argument("--resume", default=None)
+    ap.add_argument("--set-dir", default=None, help="season data dir (default: built-in placeholder set)")
     ap.add_argument("--opponents", choices=["random", "eval", "mix"], default="mix",
                     help="random: 7 random bots (curriculum start); eval: 3 econ/3 reroll/1 random; mix: sampled")
     args = ap.parse_args()
@@ -34,7 +35,7 @@ def main():
     device_note = "cpu"  # env/bot simulation dominates; the net is small
 
     lineup = {"random": [RandomBot] * 7, "eval": EVAL_LINEUP, "mix": None}[args.opponents]
-    venv = VecEnv(args.workers, args.envs_per_worker, seed=args.seed * 100_000, lineup=lineup)
+    venv = VecEnv(args.workers, args.envs_per_worker, seed=args.seed * 100_000, lineup=lineup, set_dir=args.set_dir)
     obs_dim = venv.obs.shape[1]
     model = ActorCritic(obs_dim, N_ACTIONS)
     if args.resume:

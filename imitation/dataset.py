@@ -252,6 +252,8 @@ def build_dataset(records, out_dir=DATA_DIR / "datasets", name=None, id_map=None
     arr["weight"] = ((4.5 - arr["placement"]) / 3.5).astype(np.float32)
     meta = {"name": name, "n_records": N, "n_matches": len({r["match_id"] for r in records}),
             "placement_mean": float(arr["placement"].mean())}
+    if sim_names and not id_map:
+        id_map = {n: n for n in sim_names}  # imported seasons use Riot apiName ids, so units map to themselves
     if id_map and sim_names:
         sim_idx = {n: i for i, n in enumerate(sim_names)}
         arr["sim_units"] = np.zeros((N, len(sim_names)), np.float32)

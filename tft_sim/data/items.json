@@ -1,0 +1,23 @@
+{
+ "components": {
+  "Sword": {
+   "atk": 15
+  },
+  "Bow": {
+   "aspd_pct": 0.15
+  },
+  "Rod": {
+   "ap": 20
+  },
+  "Vest": {
+   "armor": 20
+  },
+  "Belt": {
+   "hp": 150
+  },
+  "Tear": {
+   "mana": 15
+  }
+ },
+ "completed": {}
+}

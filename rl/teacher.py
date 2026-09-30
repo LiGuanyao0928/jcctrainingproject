@@ -2,7 +2,6 @@
 (behaviour cloning) because plain PPO from scratch never leaves last place."""
 from bots.rule_bots import card_score, copies_owned, focus_traits, unit_power
 from rl.env import AUG0, BUY0, CAR0, END, REROLL, SELL_BENCH0, XP
-from tft_sim.data import REROLL_COST, XP_COST
 
 TARGET = {1: 3, 2: 5, 3: 7, 4: 8}
 
@@ -46,9 +45,9 @@ def teacher_action(env, mask):
     # bench full but a wanted card exists: free a slot first
     if None not in me.bench:
         pass
-    if me.level < target and me.gold - XP_COST >= floor and mask[XP]:
+    if me.level < target and me.gold - g.rules.xp_cost >= floor and mask[XP]:
         return XP
-    if (me.level >= target and me.gold > floor + 10 or me.hp < 40) and me.gold - REROLL_COST >= floor and mask[REROLL]:
+    if (me.level >= target and me.gold > floor + 10 or me.hp < 40) and me.gold - g.rules.reroll_cost >= floor and mask[REROLL]:
         return REROLL
     i = best_buy(8, floor)
     if i is not None:

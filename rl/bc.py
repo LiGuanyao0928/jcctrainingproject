@@ -14,11 +14,11 @@ from rl.ppo import NEG, ActorCritic
 from rl.teacher import teacher_action
 
 
-def collect(episodes, seed, eps=0.05):
+def collect(episodes, seed, eps=0.05, set_dir=None):
     rng = random.Random(seed)
     O, M, A, places = [], [], [], []
     for ep in range(episodes):
-        env = TFTEnv(seed=seed + ep * 31)
+        env = TFTEnv(seed=seed + ep * 31, set_dir=set_dir)
         o, info = env.reset()
         done = False
         while not done:
@@ -37,11 +37,12 @@ def main():
     ap.add_argument("--episodes", type=int, default=600)
     ap.add_argument("--epochs", type=int, default=15)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--set-dir", default=None)
     ap.add_argument("--out", default="checkpoints/bc.pt")
     args = ap.parse_args()
     torch.manual_seed(args.seed)
     t = time.time()
-    O, M, A, places = collect(args.episodes, args.seed)
+    O, M, A, places = collect(args.episodes, args.seed, set_dir=args.set_dir)
     print(f"{len(A)} samples from {args.episodes} teacher games in {time.time() - t:.0f}s "
           f"(teacher avg place under exploration noise {np.mean(places):.2f})", flush=True)
     model = ActorCritic(O.shape[1], N_ACTIONS)

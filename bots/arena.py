@@ -9,16 +9,19 @@ import time
 from multiprocessing import Pool
 
 from bots.rule_bots import EconBot, RandomBot, RerollBot
+from functools import partial
+
+from tft_sim.data import GameData
 from tft_sim.game import Game
 
 LINEUP = [EconBot, EconBot, EconBot, RerollBot, RerollBot, RerollBot, RandomBot, RandomBot]
 
 
-def play(seed):
+def play(seed, set_dir=None):
     rng = random.Random(seed)
     classes = LINEUP[:]
     rng.shuffle(classes)
-    game = Game(seed=seed)
+    game = Game(seed=seed, data=GameData(set_dir))
     agents = [c(seed * 100 + i) for i, c in enumerate(classes)]
     placements = game.run(agents)
     rows = [(classes[i].name, placements[i]) for i in range(len(classes))]
@@ -30,11 +33,12 @@ def main():
     ap.add_argument("--games", type=int, default=1000)
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--set-dir", default=None, help="season data dir (default: built-in placeholder set)")
     args = ap.parse_args()
     t = time.time()
     seeds = range(args.seed, args.seed + args.games)
     with Pool(args.workers) as pool:
-        results = pool.map(play, seeds, chunksize=8)
+        results = pool.map(partial(play, set_dir=args.set_dir), seeds, chunksize=8)
     dt = time.time() - t
     place = collections.defaultdict(list)
     wins = collections.Counter()

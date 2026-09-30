@@ -66,3 +66,17 @@ tests/
   - `webui/app.py`：`python -m webui.app` → http://127.0.0.1:5000（只监听本机）；导入、筛选、统计、一键生成/下载数据集
   - `imitation/sample.py`：无密钥时用合成对局（ids 以 `SYN_` 开头）试用整个流程
   - 流程：`python -m imitation.riot_fetch ...` → `python -m imitation.dataset ingest` （或网页导入）→ 网页/`dataset build` 生成数据集
+- [~] 换成真实赛季数据（进行中，先做通用部分）
+  - 现状：**真实数据还没导入**。沙箱网络拦了 `raw.communitydragon.org` 和 `ddragon.leagueoflegends.com`，且还没拿到 `en_us.json`
+  - 已完成：引擎数据驱动化
+    - `tft_sim/data/` 下 `champions.json traits.json items.json augments.json rules.json`（后三个可选，缺省回退到内置默认）；
+      卡池数量、商店概率、经验表、等级上限、利息/连胜、阶段伤害、海克斯轮次都在 `rules.json`
+    - 装备支持配方表（`items.json` 的 `completed`），没列配方的组合仍按"属性相加"合成
+    - 战斗新增：法抗、暴击（按期望值，保持确定性）、伤害类型（物理/魔法/真实）、技能 `stun` / `buff_as`
+    - 羁绊/装备可用属性：`atk atk_pct aspd_pct ap armor mr hp hp_pct mana mana_start crit_chance`
+    - RL 环境：板上可寻址单位 9→10，羁绊特征按当前数据生成；旧模型不兼容，已用默认数据重训
+  - `python -m tft_sim.season_import en_us.json --set N --out tft_sim/data/sets/setN`：Community Dragon → 赛季目录
+    + `IMPORT_REPORT.md`（哪些译了、哪些没译）。**仅用手写样例文件测试过，没对过真实文件**，字段名可能要调
+  - 用法：`GameData(set_dir)`；`python -m bots.arena --set-dir ...`；`rl.bc/train/evaluate --set-dir ...`
+  - 导入的英雄 id 用 Riot apiName（如 `TFT13_Jinx`），与对局 API 一致，数据集的 `sim_units` 自动对上，不再需要 id_map
+  - 仍需手工/写代码：英雄独有技能、非纯属性的羁绊效果、海克斯（只保留通用默认集）、回合流程（PvE/选秀轮）写死在 `game.py`

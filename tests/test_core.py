@@ -194,7 +194,7 @@ def test_board_size_limited_by_level():
 
 
 def test_augment_and_carousel_rounds():
-    assert augments.AUGMENT_ROUNDS == {(2, 1): "silver", (3, 2): "gold", (4, 2): "prismatic"}
+    assert Game(seed=0).rules.augment_rounds == {(2, 1): "silver", (3, 2): "gold", (4, 2): "prismatic"}
     kinds = {(s, r): k for s, r, k in SCHEDULE}
     assert kinds[(1, 1)] == "carousel" and kinds[(2, 4)] == "carousel" and kinds[(2, 7)] == "pve"
     g = Game(seed=13)

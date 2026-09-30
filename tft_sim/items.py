@@ -1,29 +1,58 @@
-"""Components combine pairwise into completed items whose stats are the sum of the parts."""
-COMPONENTS = {
-    "Sword": {"atk": 15},
-    "Bow": {"aspd_pct": 0.15},
-    "Rod": {"ap": 20},
-    "Vest": {"armor": 20},
-    "Belt": {"hp": 150},
-    "Tear": {"mana": 15},
-}
+"""Items: components combine pairwise into completed items. Data is replaceable (items.json).
+
+items.json: {"components": {name: stats}, "completed": {name: {"from": [a, b], "stats": {...}}}}
+A pair with no listed recipe still combines (name "A+B", stats summed), so the default set needs no recipe table.
+Stat keys: atk, atk_pct, aspd_pct, ap, armor, mr, hp, hp_pct, mana, crit_chance.
+"""
+import json
+from pathlib import Path
+
 SEP = "+"
+DEFAULT_PATH = Path(__file__).parent / "data" / "items.json"
 
 
-def is_component(item: str) -> bool:
-    return item in COMPONENTS
+class ItemBook:
+    def __init__(self, components, completed=None):
+        self.components = dict(components)
+        self.completed = dict(completed or {})
+        self.recipes = {frozenset(v["from"]): k for k, v in self.completed.items()}
+
+    @classmethod
+    def load(cls, path=DEFAULT_PATH):
+        d = json.loads(Path(path).read_text())
+        return cls(d["components"], d.get("completed"))
+
+    def is_component(self, item):
+        return item in self.components
+
+    def combine(self, a, b):
+        if not (self.is_component(a) and self.is_component(b)):
+            raise ValueError("can only combine two components")
+        return self.recipes.get(frozenset((a, b))) or SEP.join(sorted((a, b)))
+
+    def stats(self, item):
+        if item in self.components:
+            return dict(self.components[item])
+        if item in self.completed:
+            return dict(self.completed[item]["stats"])
+        out = {}
+        for part in item.split(SEP):
+            for k, v in self.components[part].items():
+                out[k] = out.get(k, 0) + v
+        return out
 
 
-def combine(a: str, b: str) -> str:
-    if not (is_component(a) and is_component(b)):
-        raise ValueError("can only combine two components")
-    return SEP.join(sorted((a, b)))
+_DEFAULT = ItemBook.load()
+COMPONENTS = _DEFAULT.components
 
 
-def item_stats(item: str) -> dict:
-    parts = [item] if is_component(item) else item.split(SEP)
-    out = {}
-    for p in parts:
-        for k, v in COMPONENTS[p].items():
-            out[k] = out.get(k, 0) + v
-    return out
+def is_component(item):
+    return _DEFAULT.is_component(item)
+
+
+def combine(a, b):
+    return _DEFAULT.combine(a, b)
+
+
+def item_stats(item):
+    return _DEFAULT.stats(item)

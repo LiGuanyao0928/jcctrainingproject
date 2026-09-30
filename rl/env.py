@@ -8,42 +8,43 @@ from gymnasium import spaces
 
 from bots.rule_bots import COL_ORDER, EconBot, RandomBot, RerollBot, copies_owned, tidy
 from tft_sim import augments as aug
-from tft_sim.data import BENCH_SIZE, BOARD_COLS, MAX_LEVEL, REROLL_COST, XP_COST, XP_TO_LEVEL, GameData
+from tft_sim.data import BENCH_SIZE, BOARD_COLS, GameData
 from tft_sim.game import Game, board_loc
-from tft_sim.items import COMPONENTS, is_component
 
-N = 9  # bench slots / addressable board units
+NB = BENCH_SIZE   # bench slots
+NK = 10           # addressable board units (max level 10)
 END, REROLL, XP = 0, 1, 2
 BUY0 = 3                       # 5 shop slots
-SELL_BENCH0 = BUY0 + 5         # 9
-SELL_BOARD0 = SELL_BENCH0 + N  # 9
-UP0 = SELL_BOARD0 + N          # bench -> board, 9
-DOWN0 = UP0 + N                # board -> bench, 9
-EQUIP0 = DOWN0 + N             # inventory[0] onto board unit k, 9
-AUG0 = EQUIP0 + N              # 3
+SELL_BENCH0 = BUY0 + 5         # NB
+SELL_BOARD0 = SELL_BENCH0 + NB  # NK: k-th fielded unit, by slot order
+UP0 = SELL_BOARD0 + NK         # bench i -> board, NB
+DOWN0 = UP0 + NB               # board unit k -> bench, NK
+EQUIP0 = DOWN0 + NK            # inventory[0] onto board unit k, NK
+AUG0 = EQUIP0 + NK             # 3
 CAR0 = AUG0 + 3                # 9
 N_ACTIONS = CAR0 + 9
 
-TRAITS = ["Assassin", "Bruiser", "Guardian", "Mage", "Ranger", "Warrior"]
-UNIT_F = 10
 BOT_MIX = ((EconBot, 0.4), (RerollBot, 0.4), (RandomBot, 0.2))
 POT_SCALE, POT_GAMMA, STEP_COST = 0.02, 0.997, 0.002
 EVAL_LINEUP = [EconBot] * 3 + [RerollBot] * 3 + [RandomBot]
 
 
-def _champ_feat(data):
+def _champ_feat(data, trait_names):
     out = {}
     for n, c in data.champions.items():
-        out[n] = (c.cost / 5.0, [1.0 if t in c.traits else 0.0 for t in TRAITS])
+        out[n] = (c.cost / 5.0, [1.0 if t in c.traits else 0.0 for t in trait_names])
     return out
 
 
 class TFTEnv(gym.Env):
     metadata = {}
 
-    def __init__(self, seed=None, lineup=None, shaping=1.0, max_actions=40, auto_arrange=True):
-        self.data = GameData()
-        self.cf = _champ_feat(self.data)
+    def __init__(self, seed=None, lineup=None, shaping=1.0, max_actions=40, auto_arrange=True, set_dir=None):
+        self.data = GameData(set_dir)
+        self.rules, self.items = self.data.rules, self.data.items
+        self.trait_names = sorted(self.data.traits)
+        self.unit_f = 4 + len(self.trait_names)
+        self.cf = _champ_feat(self.data, self.trait_names)
         self.lineup = lineup            # fixed list of 7 bot classes, else sampled from BOT_MIX
         self.shaping = shaping
         self.max_actions = max_actions
@@ -81,9 +82,9 @@ class TFTEnv(gym.Env):
         while not g.finished and me.alive:
             alive = g.start_round()
             hp0 = me.hp
-            tier = aug.AUGMENT_ROUNDS.get((g.stage, g.rnd))
+            tier = self.rules.augment_rounds.get((g.stage, g.rnd))
             if tier:
-                offers = {p.id: aug.offer(g.rng, tier) for p in alive}
+                offers = {p.id: aug.offer(g.rng, tier, self.data.augments) for p in alive}
                 for p in alive:
                     if p.id:
                         opts = offers[p.id]
@@ -155,7 +156,7 @@ class TFTEnv(gym.Env):
 
     # ---------- actions ----------
     def board_slots(self):
-        return sorted(self.me.board)[:N]
+        return sorted(self.me.board)[:NK]
 
     def _auto_slot(self, unit):
         rng = self.data.champions[unit.name].range
@@ -198,8 +199,8 @@ class TFTEnv(gym.Env):
         m[END] = True
         if self.n_actions >= self.max_actions:
             return m
-        m[REROLL] = me.gold >= REROLL_COST or me.free_rerolls > 0
-        m[XP] = me.gold >= XP_COST and me.level < MAX_LEVEL
+        m[REROLL] = me.gold >= self.rules.reroll_cost or me.free_rerolls > 0
+        m[XP] = me.gold >= self.rules.xp_cost and me.level < self.rules.max_level
         for i, name in enumerate(me.shop):
             if name and me.gold >= self.data.champions[name].cost and g.can_acquire(me, name):
                 m[BUY0 + i] = True
@@ -222,19 +223,19 @@ class TFTEnv(gym.Env):
             m[DOWN0 + k] = has_free_bench
             if me.inventory:
                 u = me.board[s]
-                m[EQUIP0 + k] = len(u.items) < 3 or (is_component(me.inventory[0]) and is_component(u.items[-1]))
+                m[EQUIP0 + k] = len(u.items) < 3 or (self.items.is_component(me.inventory[0]) and self.items.is_component(u.items[-1]))
         return m
 
     # ---------- observation ----------
     def _unit_feat(self, u):
         if u is None:
-            return [0.0] * UNIT_F
+            return [0.0] * self.unit_f
         cost, tr = self.cf[u.name]
         return [1.0, cost, *tr, u.star / 3.0, len(u.items) / 3.0]
 
     def _card_feat(self, name):
         if name is None:
-            return [0.0] * UNIT_F
+            return [0.0] * self.unit_f
         cost, tr = self.cf[name]
         have = copies_owned(self.me, name)
         return [1.0, cost, *tr, have / 9.0, float(have >= 2)]
@@ -250,27 +251,27 @@ class TFTEnv(gym.Env):
         f = []
         kind = [g.kind == k for k in ("pvp", "pve", "carousel")]
         phase = [self.phase == k for k in ("plan", "aug", "car")]
-        nxt = XP_TO_LEVEL.get(me.level + 1)
+        nxt = self.rules.xp_to_level.get(me.level + 1)
         opp = sorted(p.hp for p in g.players[1:])
-        comps = [sum(1 for i in me.inventory if i == c) for c in COMPONENTS]
+        comps = [sum(1 for i in me.inventory if i == c) for c in self.items.components]
         effects, counts = self.data.active_trait_effects(u.name for u in me.board.values())
         f += [g.stage / 8, g.rnd / 7, *map(float, kind), *map(float, phase), me.gold / 100, min(me.gold // 10, 5) / 5,
-              me.level / 9, (me.xp / nxt) if nxt else 1.0, me.hp / 100, me.win_streak / 10, me.lose_streak / 10,
+              me.level / self.rules.max_level, (me.xp / nxt) if nxt else 1.0, me.hp / 100, me.win_streak / 10, me.lose_streak / 10,
               len(g.alive_players()) / 8, len(me.board) / max(1, me.level), sum(u is None for u in me.bench) / 9,
-              len(me.inventory) / 10, sum(1 for i in me.inventory if not is_component(i)) / 10,
+              len(me.inventory) / 10, sum(1 for i in me.inventory if not self.items.is_component(i)) / 10,
               me.free_rerolls / 4, self.n_actions / self.max_actions]
         f += [c / 4 for c in comps]
-        f += [counts.get(t, 0) / 6 for t in TRAITS]
+        f += [counts.get(t, 0) / 6 for t in self.trait_names]
         f += [h / 100 for h in opp] + [0.0] * (7 - len(opp))
         for name in me.shop:
             f += self._card_feat(name)
         for u in me.bench:
             f += self._unit_feat(u)
         slots = self.board_slots()
-        for k in range(N):
+        for k in range(NK):
             f += self._unit_feat(me.board[slots[k]] if k < len(slots) else None)
         cars = [c[0] for c in g.carousel] if self.phase == "car" else []
-        for k in range(N):
+        for k in range(9):
             f += self._card_feat(cars[k] if k < len(cars) else None)
         for k in range(3):
             a = self.options[k] if k < len(self.options) else {}

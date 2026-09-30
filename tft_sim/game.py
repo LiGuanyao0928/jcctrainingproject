@@ -5,11 +5,8 @@ from dataclasses import dataclass, field
 from . import augments as aug
 from . import carousel as car
 from . import combat
-from .data import (BENCH_SIZE, BOARD_SLOTS, FREE_XP_PER_ROUND, INTEREST_CAP, INTEREST_PER,
-                   MAX_ITEMS_PER_UNIT, MAX_LEVEL, NUM_PLAYERS, REROLL_COST, SHOP_ODDS, SHOP_SIZE,
-                   START_HP, XP_COST, XP_PER_BUY, XP_TO_LEVEL, GameData, sell_value, stage_damage,
-                   streak_bonus)
-from .items import COMPONENTS, combine, is_component
+from .data import (BENCH_SIZE, BOARD_SLOTS, MAX_ITEMS_PER_UNIT, NUM_PLAYERS, SHOP_SIZE, START_HP,
+                   GameData, sell_value)
 
 MAX_STAGE = 9
 # locations: 0..BENCH_SIZE-1 = bench index, BENCH_SIZE+slot = board slot
@@ -94,6 +91,7 @@ class Game:
     def __init__(self, seed=None, data=None, num_players=NUM_PLAYERS):
         self.rng = random.Random(seed)
         self.data = data or GameData()
+        self.rules, self.items = self.data.rules, self.data.items
         self.players = [Player(i) for i in range(num_players)]
         self.pool = {n: self.data.pool_size(n) for n in self.data.champions}
         self.round_idx = 0
@@ -104,7 +102,7 @@ class Game:
 
     # ---------- pool / shop ----------
     def _draw(self, level):
-        odds = SHOP_ODDS[level]
+        odds = self.rules.odds(level)
         cost = self.rng.choices(range(1, 6), weights=odds)[0]
         for c in [cost] + [x for x in range(1, 6) if x != cost]:
             names = [n for n in self.data.by_cost[c] if self.pool[n] > 0]
@@ -127,26 +125,27 @@ class Game:
     def reroll(self, p):
         if p.free_rerolls > 0:
             p.free_rerolls -= 1
-        elif p.gold >= REROLL_COST:
-            p.gold -= REROLL_COST
+        elif p.gold >= self.rules.reroll_cost:
+            p.gold -= self.rules.reroll_cost
         else:
             return False
         self.refresh_shop(p)
         return True
 
     def buy_xp(self, p):
-        if p.gold < XP_COST or p.level >= MAX_LEVEL:
+        if p.gold < self.rules.xp_cost or p.level >= self.rules.max_level:
             return False
-        p.gold -= XP_COST
-        self.add_xp(p, XP_PER_BUY)
+        p.gold -= self.rules.xp_cost
+        self.add_xp(p, self.rules.xp_per_buy)
         return True
 
     def add_xp(self, p, n):
         p.xp += n
-        while p.level < MAX_LEVEL and p.xp >= XP_TO_LEVEL[p.level + 1]:
-            p.xp -= XP_TO_LEVEL[p.level + 1]
+        r = self.rules
+        while p.level < r.max_level and p.xp >= r.xp_to_level[p.level + 1]:
+            p.xp -= r.xp_to_level[p.level + 1]
             p.level += 1
-        if p.level >= MAX_LEVEL:
+        if p.level >= r.max_level:
             p.xp = 0
 
     # ---------- units ----------
@@ -249,8 +248,8 @@ class Game:
         if u is None or inv_idx >= len(p.inventory):
             return False
         item = p.inventory[inv_idx]
-        if u.items and is_component(item) and is_component(u.items[-1]):
-            u.items[-1] = combine(u.items[-1], item)
+        if u.items and self.items.is_component(item) and self.items.is_component(u.items[-1]):
+            u.items[-1] = self.items.combine(u.items[-1], item)
         elif len(u.items) < MAX_ITEMS_PER_UNIT:
             u.items.append(item)
         else:
@@ -273,7 +272,7 @@ class Game:
         self.add_xp(p, a.get("xp", 0))
         p.free_rerolls += a.get("free_rerolls", 0)
         for _ in range(a.get("components", 0)):
-            p.inventory.append(self.rng.choice(list(COMPONENTS)))
+            p.inventory.append(self.rng.choice(list(self.items.components)))
         for k, v in a.get("buff", {}).items():
             p.buffs[k] = p.buffs.get(k, 0) + v
 
@@ -287,7 +286,7 @@ class Game:
                 break
             name = self.rng.choices(names, weights=[self.pool[n] for n in names])[0]
             self.pool[name] -= 1
-            self.carousel.append((name, self.rng.choice(list(COMPONENTS))))
+            self.carousel.append((name, self.rng.choice(list(self.items.components))))
         return car.pick_order(self.players)
 
     def carousel_take(self, p, i):
@@ -320,11 +319,11 @@ class Game:
 
     def _income(self, p):
         base = base_income(self.stage, self.rnd)
-        interest = min(INTEREST_CAP, p.gold // INTEREST_PER)
-        streak = streak_bonus(max(p.win_streak, p.lose_streak))
+        interest = min(self.rules.interest_cap, p.gold // self.rules.interest_per)
+        streak = self.rules.streak_bonus(max(p.win_streak, p.lose_streak))
         p.gold += base + interest + streak
         if (self.stage, self.rnd) != (1, 1):
-            self.add_xp(p, FREE_XP_PER_ROUND)
+            self.add_xp(p, self.rules.free_xp_per_round)
 
     def _board_units(self, p, side):
         return combat.build_units(side, p.board, self.data, p.buffs)
@@ -348,10 +347,10 @@ class Game:
         if self.finished:
             return
         alive = self.start_round()
-        tier = aug.AUGMENT_ROUNDS.get((self.stage, self.rnd))
+        tier = self.rules.augment_rounds.get((self.stage, self.rnd))
         if tier:
             for p in alive:
-                options = aug.offer(self.rng, tier)
+                options = aug.offer(self.rng, tier, self.data.augments)
                 i = agents[p.id].pick_augment(self, p, options)
                 self.apply_augment(p, options[i if 0 <= i < len(options) else 0])
         if self.kind == "carousel":
@@ -364,7 +363,7 @@ class Game:
         for p in alive:
             res = combat.simulate(self._board_units(p, 0), combat.creep_team(1, self.stage))
             if res.winner == 0:
-                p.inventory.append(self.rng.choice(list(COMPONENTS)))
+                p.inventory.append(self.rng.choice(list(self.items.components)))
 
     def _pvp(self, alive):
         ids = [p.id for p in alive]
@@ -381,7 +380,7 @@ class Game:
             if res.winner < 0:
                 continue
             win, lose = (pa, pb) if res.winner == 0 else (pb, pa)
-            dmg = stage_damage(self.stage) + res.survivors[res.winner]
+            dmg = self.rules.stage_damage(self.stage) + res.survivors[res.winner]
             win_is_ghost = ghost and win is pb
             lose_is_ghost = ghost and lose is pb
             if not win_is_ghost:

@@ -1,7 +1,7 @@
 """Rule-based opponents: economy (运营流), reroll (D牌流) and random."""
 import random
 
-from tft_sim.data import BENCH_SIZE, BOARD_COLS, REROLL_COST, XP_COST
+from tft_sim.data import BENCH_SIZE, BOARD_COLS
 from tft_sim.game import Agent, board_loc
 
 COL_ORDER = [3, 2, 4, 1, 5, 0, 6]  # centre-out
@@ -127,13 +127,13 @@ def focus_names(game, p, focus):
 
 
 def level_up(game, p, target, floor):
-    while p.level < target and p.gold - XP_COST >= floor:
+    while p.level < target and p.gold - game.rules.xp_cost >= floor:
         if not game.buy_xp(p):
             break
 
 
 def roll(game, p, floor, min_score, max_cost=5):
-    while p.gold - REROLL_COST >= floor:
+    while p.gold - game.rules.reroll_cost >= floor:
         if not game.reroll(p):
             break
         buy_best(game, p, floor, min_score, max_cost)
