@@ -74,7 +74,7 @@ tests/
     - 装备支持配方表（`items.json` 的 `completed`），没列配方的组合仍按"属性相加"合成
     - 战斗新增：法抗、暴击（按期望值，保持确定性）、伤害类型（物理/魔法/真实）、技能 `stun` / `buff_as`
     - 羁绊/装备可用属性：`atk atk_pct aspd_pct ap armor mr hp hp_pct mana mana_start crit_chance`
-    - RL 环境：板上可寻址单位 9→10，羁绊特征按当前数据生成；旧模型不兼容，已用默认数据重训
+    - RL 环境：板上可寻址单位 9→10，羁绊特征按当前数据生成；旧模型不兼容，已用默认数据重训（`checkpoints/ppo.pt`，100 局评估：均名 1.22、前四 99%、夺冠 88%）
   - `python -m tft_sim.season_import en_us.json --set N --out tft_sim/data/sets/setN`：Community Dragon → 赛季目录
     + `IMPORT_REPORT.md`（哪些译了、哪些没译）。**仅用手写样例文件测试过，没对过真实文件**，字段名可能要调
   - 用法：`GameData(set_dir)`；`python -m bots.arena --set-dir ...`；`rl.bc/train/evaluate --set-dir ...`
